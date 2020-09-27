@@ -1,0 +1,13 @@
+*~
+#*
+.ipynb_checkpoint
+.ipynb_checkpoints
+*.png
+*.pdf
+*.jpeg
+*.jpg
+*.gif
+*.zip
+*.gz
+*.bz2
+*.mat
