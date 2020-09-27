@@ -10,4 +10,5 @@
 *.zip
 *.gz
 *.bz2
+*.tar
 *.mat
