@@ -1,6 +1,6 @@
 clear all
-jmodes = 20
-nth = 50
+jmodes = 10
+nth = 30
 R = 5
 % scaling of the radial modes
 zero_bess_t = zeros(jmodes+1,nth);
