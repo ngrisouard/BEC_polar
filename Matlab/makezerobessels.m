@@ -5,7 +5,7 @@
 %% precision is the convergence criterion for the algorithm.
 
 clear all
-
+tic
 norders = 1024;
 nzeros = 1024;
 nkind = 1;
@@ -18,7 +18,7 @@ c(2:norders/2+1,1);
 for n = 1:norders/2
     c(n+1,2:nzeros+1) = bessel_zeros(nkind,n,nzeros,precision);
 end
-
+toc
 save('dht.mat','c')
 
 beep
