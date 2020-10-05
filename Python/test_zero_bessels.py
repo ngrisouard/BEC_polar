@@ -20,7 +20,7 @@ zero_bess_v = np.zeros((jmodes+1, nth))
 
 for i in range(0, jmodes+1):
     for n in range(0, int(nth/2)+1):
-        zero_bess_v[i][n + int(nth/2) - 1] = bessel_zeros(1, n, jmodes+1)[i]
+        zero_bess_v[i][n + int(nth/2) - 1] = bessel_zeros(1, n, jmodes+1, 1e-15)[i]
         #print(i)
 
 for i in range(0, jmodes+1):

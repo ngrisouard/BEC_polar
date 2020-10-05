@@ -7,7 +7,7 @@ Created on Mon Oct  5 11:22:55 2020
 '''
 compute the first nzeros zeros of the bessel functions of the
 norders first orders of the nkind-th kind and saves the result in the
-current directory in dht.csv. Needs the routine bessel_zeros.m
+current directory in dht.csv. Needs the routine bessel_zeros.py
 '''
 import csv
 import numpy as np
@@ -22,19 +22,11 @@ nkind = 1
 
 c = np.zeros((int(norders/2) + 1, nzeros+1), float)
 
-c[0][:] = bessel_zeros(nkind, 0, nzeros+1)
+c[0][:] = bessel_zeros(nkind, 0, nzeros+1, 1e-17)
 
-for n in range(1, 100):
-    print(bessel_zeros(nkind, n, nzeros)[0])
-    print(n)
+for n in range(1, int(norders/2)+1):
+    c[n][1:] = bessel_zeros(nkind, n, nzeros, 1e-17)
     
-for n in range(100, 200):
-    print(bessel_zeros(nkind, n, nzeros)[0])
-    print(n)
-    
-for n in range(200, 300):
-    print(bessel_zeros(nkind, n, nzeros)[0])
-    print(n)
 
 print(time.time() - start)
 with open('dht.csv', 'w') as csvfile:
