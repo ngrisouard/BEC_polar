@@ -5,8 +5,7 @@ jmodes = 128
 ii = 10
 N=256
 n = ii
-h=[]
-%{
+
 if isempty(N)
    N=256;
 end
@@ -41,8 +40,7 @@ else
    if ~isa(h,'numeric')
       h=feval(h,r);
    end
-   H=I*(h./R).*K; 
-end
-%}
+   H=I*(h./R).*K;
 
-[H,k,r,I,K,R, h]=dht([],R,jmodes,ii)
+
+%[H,kk,rr,I,KK,RR, h]=dht([],R,jmodes,ii)

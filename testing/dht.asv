@@ -16,13 +16,13 @@
 % h      Signal h(r) *
 % R      Maximum radius [m]
 %   or
-% R      Signal factors °                 {default}
+% R      Signal factors ?                 {default}
 % N      Number of sampling points        {256}
 %   or
-% K      Spectrum factors °               {default}
+% K      Spectrum factors ?               {default}
 % n      Transform order                  {0}
 %   or
-% I      Integration kernel °             {default}
+% I      Integration kernel ?             {default}
 %
 %Output:
 % H      Spectrum H(k)
@@ -37,7 +37,7 @@
 % *)  Values request the presence of the kernel, samplings
 %     and factors, which can be computed with empty input.
 %
-% °)  The computation of the integration kernel is slow com-
+% ?)  The computation of the integration kernel is slow com-
 %     pared to the full transform. But if the factors and the
 %     kernel are all present, they are reused as is.
 %
@@ -48,32 +48,33 @@
 %     53-58 (2004).
 %
 
-%     Marcel Leutenegger © June 2006
-%     Manuel Guizar-Sicairos © 2004
+%     Marcel Leutenegger ? 29.7.2009
+%     Manuel Guizar-Sicairos ? 2004
 %
-function [H,k,r,I,K,R,h]=dht_mod(h,R,N,n,c)
-if nargin < 3 || isempty(N)
+function [H,k,r,I,K,R,h]=dht(h,R,N,n)
+if nargin < 3 | isempty(N)
    N=256;
 end
-if nargin < 4 || isempty(n)
+if nargin < 4 | isempty(n)
    n=0;
 end
 if numel(n) > 1
    K=N;
    I=n;
 else
-   if ~isempty(h) && isa(h,'numeric')
+   if ~isempty(h) & isa(h,'numeric')
       error('Need a function h(r) without kernel.');
    end
-   load('dht.mat');                 % Bessel Jn rooths
-   C=c(1+abs(n),1+N);
-   c=c(1+abs(n),1:N);
+   load('~\dht.mat');                 % Bessel Jn rooths
+   C=c(1+n,1+N);
+   c=c(1+n,1:N);
    r=R/C*c(:);
    k=c(:)/R;
    I=abs(besselj(1+n,c));
-   if abs(n) > 0
-      I(1)=1/N;                     % avoid zero
+   if n > 0
+      I(1)=1/N;                     % avoid zero - thanks to Nicolas Grisouard
    end
+%    I(~I)=1/N;                     % or this, but there should be only one
    K=2*pi*R/C*I(:);
    R=I(:)/R;
    I=sqrt(2/C)./I;
