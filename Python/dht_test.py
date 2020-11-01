@@ -14,7 +14,7 @@ import numpy as np
 
 R = 10
 jmodes = 128
-n = 10
+n = 215
 ii = n
 N=256
 h=[]

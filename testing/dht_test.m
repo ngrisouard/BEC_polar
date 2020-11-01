@@ -2,7 +2,7 @@ clear all
 
 R = 10
 jmodes = 128
-ii = 10
+ii = 215
 N=256
 n = ii
 h=[]

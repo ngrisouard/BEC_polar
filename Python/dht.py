@@ -10,7 +10,7 @@ import numpy as np
 
 
 def dht(h, R, N = 256, n = 0):
-    if type(n) == list:
+    if type(n) == list or type(n) == np.ndarray:
         if len(n) > 1:
             K = N
             I = n

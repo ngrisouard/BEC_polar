@@ -61,13 +61,13 @@ if nti == 0 % then define all parameters
     theta1 = 0; % center of vortex (angle)
     circ1 = 1; % vortex circulation
 
-    % r2 = 3*R/8; % center of vortex (radius)
-    % theta2 = pi; % center of vortex (angle)
-    % circ2 = -1; % vortex circulation
+    r2 = 3*R/8; % center of vortex (radius)
+    theta2 = pi; % center of vortex (angle)
+    circ2 = -1; % vortex circulation
 
-    % r3 = 3*R/8; % center of vortex (radius)
-    % theta3 = 0; % center of vortex (angle)
-    % circ3 = 1; % vortex circulation
+    r3 = 3*R/8; % center of vortex (radius)
+    theta3 = 0; % center of vortex (angle)
+    circ3 = 1; % vortex circulation
 
 
     wf = tanh((R-Rad)/sqrt(2)).*exp(1i*7*Thet)... % background
@@ -97,6 +97,8 @@ if nti == 0 % then define all parameters
     colormap(jet(256))
     surf(X,Y,abs(wfi).^2), shading interp
     axis equal tight
+    xlabel('x')
+    ylabel('y')
     colorbar
 
 
