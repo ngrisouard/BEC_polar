@@ -9,6 +9,7 @@ import numpy.ma as ma
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
+from scipy import io
 from dht import *
 from ngobfft import *
 import os
@@ -16,6 +17,9 @@ import os
 
 if os.path.isdir('./output') == False:
     os.mkdir('./output')
+    os.mkdir('./output/kernal')
+    
+
 
 nti = 0             #starting iteration (loads the last file of the previous run)
 ntn = 100           #final iteration of the current run
@@ -63,9 +67,9 @@ if nti == 0:        #then define all parameters
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    #r2 = 3*R/8    #center of vortex (radius)
-    #theta2 = np.pi   #center of vortex (angle)
-    #circ2 = -1    #vortex circulation
+    r2 = 3*R/8    #center of vortex (radius)
+    theta2 = np.pi   #center of vortex (angle)
+    circ2 = -1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
@@ -117,7 +121,7 @@ if nti == 0:        #then define all parameters
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     #ax.set_aspect('equal')
-    ax.plot_surface(X, Y, Z, cmap=cm.jet)
+    bar = ax.plot_surface(X, Y, Z, cmap=cm.jet)
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_xlim(10, -10)
@@ -130,13 +134,70 @@ if nti == 0:        #then define all parameters
     # Comment or uncomment following both lines to test the fake bounding box:
     for xb, yb, zb in zip(Xb, Yb, Zb):
         ax.plot([xb], [yb], [zb], 'w')
+    
+    fig.colorbar(bar, shrink=0.5, aspect=8)
 
     plt.grid()
     plt.show()
     
+    
+    ##################### Compute the integration kernal ###########
+    comp_ker = 0
+    if comp_ker == 1:
+        #nth = 10
         
+        bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+        #for ii in range(0,10):
+        for ii in range(-nth//2 + 1, nth//2+1):
+            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+            save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
+            io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
+            
+        
+    t = 0
+    nameout = 'output/psi_00000000.mat'
+    io.savemat(nameout, {'wf':wf, 't':t})
+    npi = 8          # # of digits following psi_
+    
+    misc = {'r':r, 'theta':theta, 'T':T, 'nt':nt, 'dt':dt, 'nth':nth, 
+                 'dth':dth, 'nr':nr, 'dr':dr, 'R':R, 'ppskip':ppskip, 'Rad':Rad,
+                 'Thet':Thet, 'npi':npi, 'V':V, 'comp_ker':comp_ker, 'interp_sch':
+                     interp_sch, 'wf':wf, 't':t, 'split_NL':split_NL, 
+                     'r1':r1, 'theta1':theta1, 'circ1':circ1}
+    if 'r3' in locals():
+        misc.update({'r2':r2, 'theta2':theta2, 'circ2':circ2, 'theta3':theta3,
+                          'circ3':circ3})
+    elif 'r2' in locals():
+        misc.update({'r2':r2, 'theta2':theta2, 'circ2':circ2})
+    
+    io.savemat('output/misc.mat', misc)
 
+    
+############### then reload all the parameters and last iteration
+else:
+    misc = io.loadmat('output/misc.mat')
+    nt = misc['ntn']
+    T = misc['dt'] * misc['nt']
+    misc.update({'T':T, 'nt':nt})
+    io.savemat('output/misc.mat', misc)
+    
+    psi = io.loadmat('output/psi_00000000.mat')
+    wf = psi['wf']
+    t = psi['t'][0]
+    
+#%% Temporal loop
+nti = 0
+nr = 256
+nth = 256
+pp = nti + 1
 
+deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
+
+for t in np.arange((nti+1)*dt, T+dt, dt):
+    # 1st step: the linear step, computation of the laplacian part.
+    
+    kt = k_of_x(Thet) 
+    fr = obfft(Thet, wf, 2) #fft to isolate every angular mode
     
     
 

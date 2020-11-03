@@ -72,6 +72,5 @@ docs/_build/
 target/
 
 testcode.py
-write&read.py
 *.csv
 Matlab/bessr.m
