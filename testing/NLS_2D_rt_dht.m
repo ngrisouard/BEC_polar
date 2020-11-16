@@ -57,7 +57,7 @@ if nti == 0 % then define all parameters
 
     %% Initial condition
 
-    r1 = 0; % center of vortex (radius)
+    r1 = 3*R/8; % center of vortex (radius)
     theta1 = 0; % center of vortex (angle)
     circ1 = 1; % vortex circulation
 
@@ -65,9 +65,9 @@ if nti == 0 % then define all parameters
     theta2 = pi; % center of vortex (angle)
     circ2 = -1; % vortex circulation
 
-    r3 = 3*R/8; % center of vortex (radius)
-    theta3 = 0; % center of vortex (angle)
-    circ3 = 1; % vortex circulation
+    %r3 = 3*R/8; % center of vortex (radius)
+    %theta3 = 0; % center of vortex (angle)
+    %circ3 = 1; % vortex circulation
 
 
     wf = tanh((R-Rad)/sqrt(2)).*exp(1i*7*Thet)... % background
@@ -108,12 +108,15 @@ if nti == 0 % then define all parameters
     % When the quasi fast Hankel transform is performed, the computation of the
     % so-called "integration kernel" is a long task but does not depend on the
     % input function. It can (has to) be done outside the temporal loop.
-
+    
+    comp_ker = 1
     if comp_ker == 1
-
+    order = [1:nth/2 1:nth/2]
+    order_index = 1
         for ii = -nth/2+1:nth/2
-            [H,kk,rr,I,KK,RR]=dht([],R,jmodes,ii);
+            [H,kk,rr,I,KK,RR]=dht([],R,jmodes,order(order_index));
             save(['output/ker_' num2str(floor(ii))],'I','kk','rr','KK','RR')
+            order_index = order_index+1
         end
 
     end
@@ -235,7 +238,8 @@ for t = (nti+1)*dt:dt:T
         error('Dissipation not implemented yet.');
 
     end
-
+    
+    %{
     if abs(pp/ppskip - floor(pp/ppskip)) <= 1e-14
         % in this case, an output file is produced
         % name of the outputfile
@@ -260,8 +264,17 @@ for t = (nti+1)*dt:dt:T
         end
         save(nameout,'wf','t')
     end
+    %}
     pp = pp+1;
-
+    
+    wfi = [wf wf(:,1)];
+    %figure()
+    colormap(jet(256))
+    surf(X,Y,abs(wfi).^2), shading interp
+    axis equal tight
+    xlabel('x')
+    ylabel('y')
+    drawnow()
 end
 
 toc

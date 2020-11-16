@@ -22,18 +22,18 @@ N=256
 h=[]
 
 
+bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
 
 
-
-#H, kk, rr, I, KK, RR, h = dht([],R,jmodes,ii)
+H, kk, rr, I, KK, RR, h = dht([],R,bessel_zeros,jmodes,ii)
 
 #save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
 
 #io.savemat('./output/ker.mat', save_dict)
 
-read = io.loadmat('./output/ker_3.mat')
+#read = io.loadmat('./output/ker_3.mat')
 
-I = read['I']
+#I = read['I']
 
 
 '''

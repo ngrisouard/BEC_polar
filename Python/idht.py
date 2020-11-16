@@ -26,4 +26,4 @@ import numpy as np
 
 def idht(H, I, K, R):
     
-    return I*(H/K)*R
+    return np.dot((H/K), I) * R

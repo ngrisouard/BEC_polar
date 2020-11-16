@@ -57,13 +57,15 @@ import numpy as np
 
 
 def dht(h, R, c, N = 256, n = 0):
+    k = None
+    r = None
     if type(n) == list or type(n) == np.ndarray:
         if len(n) > 1:
             K = N
             I = n
             
     else:
-        if type(h) == list and len(h) != 0:
+        if (type(h) == list or type(h) == np.ndarray) and len(h) != 0:
             raise ValueError("need kernal")
             
         
@@ -81,15 +83,16 @@ def dht(h, R, c, N = 256, n = 0):
         I = np.sqrt(2/C) / I
         I = np.outer(I, I) * special.jv(n, np.outer(c/C, c))
         
-    if not h:
+    if not any(h):
         H = h
     else:
-        if type(h) != list and type(h) != float:
+        if type(h) != list and type(h) != float and type(h) != np.ndarray:
             h_result = h(r)
         else:
             h_result = h
         
-        H = I*(h_result/ R) * K
+        H = np.dot((h_result/ R), I) * K
+        #H = np.dot(I, h_result/ R* K)
         
     return H, k, r, I, K, R, h
             

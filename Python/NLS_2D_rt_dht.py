@@ -10,8 +10,10 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from scipy import io
+from scipy import interpolate
 from dht import *
 from ngobfft import *
+from idht import *
 import os
 
 
@@ -55,7 +57,7 @@ if nti == 0:        #then define all parameters
     nr = 256        #radial points
     dr = R / (nr - 1)
     r = np.arange(0, R+dr, dr)
-    interp_sch = 'spline'
+    interp_sch = 'quadratic'
     
     jmodes = 128    #number of modes
     
@@ -63,13 +65,13 @@ if nti == 0:        #then define all parameters
     
 ############### Initial condition #########################
 
-    r1 = 0          #center of vortex (radius)
+    r1 = 3*R/8          #center of vortex (radius)
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
     r2 = 3*R/8    #center of vortex (radius)
     theta2 = np.pi   #center of vortex (angle)
-    circ2 = -1    #vortex circulation
+    circ2 = 1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
@@ -116,8 +118,12 @@ if nti == 0:        #then define all parameters
     X = Radi * np.cos(Theti)
     Y = Radi * np.sin(Theti)
     
-    Z = np.abs(wfi)**2
     
+    
+    Z = np.abs(wfi)**2
+    z_max = np.max(Z)
+    z_min = np.min(Z)
+    '''    
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     #ax.set_aspect('equal')
@@ -139,17 +145,23 @@ if nti == 0:        #then define all parameters
 
     plt.grid()
     plt.show()
-    
+    '''
+    plt.figure(figsize = (10, 8))
+    plt.pcolor(X, Y, Z, cmap=cm.jet, vmax = z_max, vmin = z_min)
+    plt.colorbar()
+    plt.show()
     
     ##################### Compute the integration kernal ###########
     comp_ker = 0
     if comp_ker == 1:
         #nth = 10
-        
+        order = range(0,128)
         bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
         #for ii in range(0,10):
-        for ii in range(-nth//2 + 1, nth//2+1):
-            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+        for ii in range(-nth//2, nth//2):
+            #H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,order[ii])
+            print(order[ii])
             save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
             io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
             
@@ -181,7 +193,7 @@ else:
     misc.update({'T':T, 'nt':nt})
     io.savemat('output/misc.mat', misc)
     
-    psi = io.loadmat('output/psi_00000000.mat')
+    psi = io.loadmat(nameout)
     wf = psi['wf']
     t = psi['t'][0]
     
@@ -190,15 +202,75 @@ nti = 0
 nr = 256
 nth = 256
 pp = nti + 1
-
+bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
 deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
+
+
+ 
+
+
 
 for t in np.arange((nti+1)*dt, T+dt, dt):
     # 1st step: the linear step, computation of the laplacian part.
     
-    kt = k_of_x(Thet) 
-    fr = obfft(Thet, wf, 2) #fft to isolate every angular mode
+    kt = k_of_x(Thet[0]) 
+    fr = obfft(Thet[0], wf, -1) #fft to isolate every angular mode
     
-    
+    if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
+        r2 = x_of_k(kt)    
+        dwfdt = obifft(kt, deriv_thet*fr, -1)
 
 
+
+
+    for ii in range(-nth//2, nth//2):
+    
+        #ii = -11
+        ker = io.loadmat('output/kernal/ker_%i.mat'%ii)
+        I = ker['I']
+        kk = ker['kk']
+        KK = ker['KK']
+        rr = ker['rr']
+        RR = ker['RR']
+    
+        #forward dht
+        Fr_func = interpolate.interp1d(r, fr[:, ii+nth//2], kind='cubic', fill_value='extrapolate')
+        Fr = Fr_func(rr)[0]
+        #Fr = Fr.flatten()
+        adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
+    
+        #inverse dht
+        Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
+        fr_func = interpolate.interp1d(rr[0], Fr[0], kind='cubic', fill_value='extrapolate')
+        fr[:, ii+nth//2] = fr_func(r)
+    
+    r2 = x_of_k(kt)
+    wf = obifft(kt, fr,-1)
+
+    if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
+    
+
+        psi = io.loadmat(nameout)
+        psi.update({'dwfdt':dwfdt})
+        #io.savemat(nameout, psi)
+    
+
+    #2nd step NL part
+    if split_NL == 0.5 or split_NL == 0 or abs(split_NL-1/3) < 1e-13:
+        wf = wf * np.exp(-1j*(V+0.5*abs(wf)**2)*dt)
+    
+    #3rd step dssipation not yet implemented
+    ###
+
+
+    wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+    wfi[:wf.shape[0], :wf.shape[1]] = wf
+
+    for i in range(wfi.shape[0]):
+        wfi[i][-1] = wf[i][0]
+
+    Z = np.abs(wfi)**2
+    plt.figure(figsize = (10, 8))
+    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+    plt.colorbar()
+    plt.show()

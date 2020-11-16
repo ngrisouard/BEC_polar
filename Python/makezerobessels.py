@@ -16,7 +16,7 @@ from scipy import special
 import time
 
 start = time.time()
-norders = 1024
+norders = 512
 nzeros = 1024
 nkind = 1
 

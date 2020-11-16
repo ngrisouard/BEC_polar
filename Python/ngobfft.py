@@ -9,9 +9,24 @@ def k_of_x(x):
     also x-vector with leading zero from k-vector"""
     dx = x[1] - x[0]
     N = x.size
+    #N = x.shape[1]
     dk = 2.*np.pi/(N*dx)
     inull = N//2
     k = dk*(np.linspace(1, N, N)-inull)
+
+    return k
+
+# %%
+
+def x_of_k(x):
+    """ k-vector with leading zero from x-vector
+    also x-vector with leading zero from k-vector"""
+    dx = x[1] - x[0]
+    N = x.size
+    #N = x.shape[1]
+    dk = 2.*np.pi/(N*dx)
+    inull = N//2
+    k = dk*(np.linspace(1, N, N)-1)
 
     return k
 
@@ -28,7 +43,7 @@ def obfft(x, f, n):
     """
     dx = x[1] - x[0]
     N = x.size
-
+    #N = x.shape[1]
     if N != np.shape(f)[n]:
         raise NameError('Wrong axis for the fft in obfft.')
 

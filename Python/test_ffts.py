@@ -1,6 +1,6 @@
 import sys
-if '/Users/NicoG/Dropbox/python_useful' not in sys.path:
-    sys.path.append('/Users/NicoG/Dropbox/python_useful')
+#if '/Users/NicoG/Dropbox/python_useful' not in sys.path:
+#    sys.path.append('/Users/NicoG/Dropbox/python_useful')
 import numpy as np
 import matplotlib.pyplot as plt
 import ngobfft as tf
@@ -43,7 +43,7 @@ plt.subplot(122)
 plt.pcolor(K, L, abs(FFF))
 plt.xlabel('$k$')
 plt.ylabel('$l$')
-plt.axis([k.min(), k.max(), l.min(), l.max()])
+plt.axis([K.min(), K.max(), L.min(), L.max()])
 plt.colorbar()
 
 plt.tight_layout()

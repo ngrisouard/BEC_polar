@@ -10,4 +10,4 @@ h=[]
 
 [H,kk,rr,I,KK,RR]=dht([],R,jmodes,ii)
 
-save(['output/ker_' num2str(floor(ii))],'I','kk','rr','KK','RR')
+%save(['output/ker_' num2str(floor(ii))],'I','kk','rr','KK','RR')
