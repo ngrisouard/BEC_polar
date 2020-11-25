@@ -65,7 +65,7 @@ else
    if ~isempty(h) && isa(h,'numeric')
       error('Need a function h(r) without kernel.');
    end
-   %load('dht.mat');                 % Bessel Jn rooths
+   load('dht.mat');                 % Bessel Jn rooths
    C=c(1+abs(n),1+N);
    c=c(1+abs(n),1:N);
    r=R/C*c(:);

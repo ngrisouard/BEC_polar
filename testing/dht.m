@@ -70,15 +70,16 @@ else
    c=c(1+n,1:N);
    r=R/C*c(:);
    k=c(:)/R;
-   I=abs(besselj(1+n,c));
+   I=abs(besselj(n+1,c));
    if n > 0
       I(1)=1/N;                     % avoid zero - thanks to Nicolas Grisouard
    end
-%    I(~I)=1/N;                     % or this, but there should be only one
+   %I(~I)=1/N;                     % or this, but there should be only one
    K=2*pi*R/C*I(:);
    R=I(:)/R;
    I=sqrt(2/C)./I;
    I=I(:)*I.*besselj(n,c(:)/C*c);
+   %I=besselj(n,c(:)/C*c)./(I(:)*I);
 end
 if isempty(h)
    H=h;

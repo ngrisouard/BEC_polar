@@ -42,7 +42,7 @@ if nti == 0:        #then define all parameters
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 5e-3
+    dt = 2e-1
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -65,19 +65,19 @@ if nti == 0:        #then define all parameters
     
 ############### Initial condition #########################
 
-    r1 = 3*R/8          #center of vortex (radius)
+    r1 = 3*R/4         #center of vortex (radius)
     theta1 = 0      #center of vortex (angle)
-    circ1 = 1       #vortex circulation
+    circ1 = 2       #vortex circulation
 
-    r2 = 3*R/8    #center of vortex (radius)
-    theta2 = np.pi   #center of vortex (angle)
-    circ2 = 1    #vortex circulation
+    #r2 = R/4    #center of vortex (radius)
+    #theta2 = np.pi   #center of vortex (angle)
+    #circ2 = 1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
     #circ3 = 1     #vortex circulation
 
-    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(7j*Thet) \
+    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) \
         * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
             / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
             
@@ -121,6 +121,7 @@ if nti == 0:        #then define all parameters
     
     
     Z = np.abs(wfi)**2
+    Z# = np.angle(wfi)
     z_max = np.max(Z)
     z_min = np.min(Z)
     '''    
@@ -147,7 +148,8 @@ if nti == 0:        #then define all parameters
     plt.show()
     '''
     plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet, vmax = z_max, vmin = z_min)
+    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+    plt.title('t=0')
     plt.colorbar()
     plt.show()
     
@@ -155,13 +157,13 @@ if nti == 0:        #then define all parameters
     comp_ker = 0
     if comp_ker == 1:
         #nth = 10
-        order = range(0,128)
+        #order = range(0,128)
         bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
         #for ii in range(0,10):
-        for ii in range(-nth//2, nth//2):
+        for ii in range(-nth//2+1, nth//2+1):
             #H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
-            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,order[ii])
-            print(order[ii])
+            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+            #print(order[ii])
             save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
             io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
             
@@ -202,7 +204,7 @@ nti = 0
 nr = 256
 nth = 256
 pp = nti + 1
-bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+bessel_zeros = 0 #np.genfromtxt('dht.csv', delimiter=',')
 deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
 
 
@@ -223,26 +225,29 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
 
 
 
-    for ii in range(-nth//2, nth//2):
+    for ii in range(-nth//2 +1, nth//2 +1):
     
         #ii = -11
-        ker = io.loadmat('output/kernal/ker_%i.mat'%ii)
+        ker = io.loadmat('output/kernal/ker_%i.mat'%(ii))
         I = ker['I']
         kk = ker['kk']
         KK = ker['KK']
         rr = ker['rr']
         RR = ker['RR']
+        
+        if abs(ii) > 0:
+            I[0, 0] = 1
     
         #forward dht
-        Fr_func = interpolate.interp1d(r, fr[:, ii+nth//2], kind='cubic', fill_value='extrapolate')
+        Fr_func = interpolate.interp1d(r, fr[:, ii-1+nth//2], kind=interp_sch, fill_value='extrapolate')
         Fr = Fr_func(rr)[0]
         #Fr = Fr.flatten()
         adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
     
         #inverse dht
         Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
-        fr_func = interpolate.interp1d(rr[0], Fr[0], kind='cubic', fill_value='extrapolate')
-        fr[:, ii+nth//2] = fr_func(r)
+        fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
+        fr[:, ii-1+nth//2] = fr_func(r)
     
     r2 = x_of_k(kt)
     wf = obifft(kt, fr,-1)
@@ -257,7 +262,7 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
 
     #2nd step NL part
     if split_NL == 0.5 or split_NL == 0 or abs(split_NL-1/3) < 1e-13:
-        wf = wf * np.exp(-1j*(V+0.5*abs(wf)**2)*dt)
+        wf = wf * np.exp(-1j*(V+0.5*np.abs(wf)**2)*dt)
     
     #3rd step dssipation not yet implemented
     ###
@@ -269,8 +274,11 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     for i in range(wfi.shape[0]):
         wfi[i][-1] = wf[i][0]
 
+    #Z = np.angle(wfi)
     Z = np.abs(wfi)**2
     plt.figure(figsize = (10, 8))
     plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+    plt.title('t=%f'%t)
     plt.colorbar()
+    plt.pause(0.05)
     plt.show()

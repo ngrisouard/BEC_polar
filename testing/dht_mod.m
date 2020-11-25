@@ -67,16 +67,24 @@ else
    end
    load('dht.mat');                 % Bessel Jn rooths
    C=c(1+abs(n),1+N);
+
    c=c(1+abs(n),1:N);
+   %if abs(n)>0
+   %    c(1) = 1/N;
+   %end
+
+       
    r=R/C*c(:);
    k=c(:)/R;
-   I=abs(besselj(1+n,c));
+   I=abs(besselj(n+1,c));
    if abs(n) > 0
       I(1)=1/N;                     % avoid zero
+      
    end
    K=2*pi*R/C*I(:);
    R=I(:)/R;
    I=sqrt(2/C)./I;
+   %I=I(:)*I.*besselj(n,c(:)/C*c);
    I=I(:)*I.*besselj(n,c(:)/C*c);
 end
 if isempty(h)

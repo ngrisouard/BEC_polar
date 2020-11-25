@@ -106,7 +106,7 @@ if nti == 0 % then define all parameters
     % When the quasi fast Hankel transform is performed, the computation of the
     % so-called "integration kernel" is a long task but does not depend on the
     % input function. It can (has to) be done outside the temporal loop.
-
+    comp_ker = 0
     if comp_ker == 1
 
         for ii = -nth/2+1:nth/2
@@ -259,6 +259,17 @@ for t = (nti+1)*dt:dt:T
         save(nameout,'wf','t')
     end
     pp = pp+1;
+    wfi = [wf wf(:,1)];
+    %figure()
+    colormap(jet(256));
+    Z = abs(wfi).^2;
+    %pcolor(X,Y,Z), shading interp
+    %colorbar()
+    plot(X(128,:), Z(128, :));
+    %axis equal tight
+    xlabel('x');
+    ylabel('y');
+    drawnow();
 
 end
 

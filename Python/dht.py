@@ -70,18 +70,18 @@ def dht(h, R, c, N = 256, n = 0):
             
         
         #c = genfromtxt('dht.csv', delimiter=',')
-        C = c[n, N]
-        c = c[n, :N]
+        C = c[abs(n), N]
+        c = c[abs(n), :N]
         r = R/C * c[:]
         k = c[:] / R
-        I = abs(special.jv(1+n, c))
-        if n > 0:
+        I = abs(special.jv(n+1, c))
+        if abs(n) > 0:
             I[0] = 1/N
             
         K = 2 * np.pi * R/C * I[:]
         R = I[:]/R
         I = np.sqrt(2/C) / I
-        I = np.outer(I, I) * special.jv(n, np.outer(c/C, c))
+        I = np.outer(I, I) * special.jv(n, np.outer(c, c/C))
         
     if not any(h):
         H = h

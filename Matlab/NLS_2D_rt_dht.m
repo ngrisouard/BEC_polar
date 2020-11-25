@@ -110,7 +110,7 @@ if nti == 0 % then define all parameters
     if comp_ker == 1
 
         for ii = -nth/2+1:nth/2
-            [H,kk,rr,I,KK,RR]=dht([],R,jmodes,ii);
+            [H,kk,rr,I,KK,RR]=dht_mod([],R,jmodes,ii);
             save(['output/ker_' num2str(floor(ii))],'I','kk','rr','KK','RR')
         end
 
@@ -258,6 +258,18 @@ for t = (nti+1)*dt:dt:T
         end
         save(nameout,'wf','t')
     end
+    wfi = [wf wf(:,1)];
+    %figure()
+    colormap(jet(256));
+    Z = abs(wfi).^2;
+    pcolor(X,Y,Z), shading interp
+    %colorbar()
+    %plot(X(128,:), Z(128, :));
+    %axis equal tight
+    xlabel('x')
+    ylabel('y')
+    drawnow()
+    
     pp = pp+1;
 
 end

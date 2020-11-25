@@ -36,7 +36,7 @@ if nti == 0 % then define all parameters
     %% Time and spatial coordinates
 
     nt = ntn;
-    dt = 5e-1; T = nt*dt;
+    dt = 5e-3; T = nt*dt;
     ppskip = 40; % interval between two written outputs
     if nti > 0
         comp_ker = 0;
@@ -57,32 +57,32 @@ if nti == 0 % then define all parameters
 
     %% Initial condition
 
-    r1 = 3*R/4; % center of vortex (radius)
-    theta1 = pi; % center of vortex (angle)
-    circ1 = 2; % vortex circulation
+    r1 = 0; % center of vortex (radius)
+    theta1 = 0; % center of vortex (angle)
+    circ1 = 1; % vortex circulation
 
-    %r2 = R/4; % center of vortex (radius)
-    %theta2 = pi; % center of vortex (angle)
-    %circ2 = 1; % vortex circulation
+    % r2 = 3*R/8; % center of vortex (radius)
+    % theta2 = pi; % center of vortex (angle)
+    % circ2 = -1; % vortex circulation
 
-    %r3 = 3*R/8; % center of vortex (radius)
-    %theta3 = 0; % center of vortex (angle)
-    %circ3 = 1; % vortex circulation
+    % r3 = 3*R/8; % center of vortex (radius)
+    % theta3 = 0; % center of vortex (angle)
+    % circ3 = 1; % vortex circulation
 
 
-    wf = tanh((R-Rad)/sqrt(2)).*exp(1i*0*Thet)... % background
-        .*(Rad.*exp(1i*circ1*Thet) - r1*exp(1i*circ1*theta1))... % 1st vortex
+    wf = tanh((R-Rad)/sqrt(2)).*exp(i*7*Thet)... % background
+        .*(Rad.*exp(i*circ1*Thet) - r1*exp(i*circ1*theta1))... % 1st vortex
         ./sqrt(Rad.^2 + r1.^2 - 2*r1*Rad.*cos(circ1*(Thet-theta1)) + 1);
     if exist('r2','var')
-        wf = wf.*(Rad.*exp(1i*circ2*Thet) - r2*exp(1i*circ2*theta2))... % 2nd vortex
+        wf = wf.*(Rad.*exp(i*circ2*Thet) - r2*exp(i*circ2*theta2))... % 2nd vortex
             ./sqrt(Rad.^2 + r2.^2 - 2*r2*Rad.*cos(circ2*(Thet-theta2)) + 1);
     end
     if exist('r3','var')
-        wf = wf.*(Rad.*exp(1i*Thet) - r3*exp(1i*theta3))... % 3rd vortex
+        wf = wf.*(Rad.*exp(i*Thet) - r3*exp(i*theta3))... % 3rd vortex
             ./sqrt(Rad.^2 + r3.^2 - 2*r3*Rad.*cos(circ3*(Thet-theta3)) + 1);
     end
 
-    [indi,indj] = find(isinf(wf));      %set infinite value to 0
+    [indi,indj] = find(isinf(wf));
     wf(indi,indj) = 0;
 
     Theti = [Thet Thet(:,1)];
@@ -97,26 +97,21 @@ if nti == 0 % then define all parameters
     colormap(jet(256))
     surf(X,Y,abs(wfi).^2), shading interp
     axis equal tight
-    xlabel('x')
-    ylabel('y')
     colorbar
 
 
 
 
-    %% Computation of the integration kernel (optionnal)
+    %% Computation of the integration kernel (optional)
     % When the quasi fast Hankel transform is performed, the computation of the
     % so-called "integration kernel" is a long task but does not depend on the
     % input function. It can (has to) be done outside the temporal loop.
-    
     comp_ker = 0
     if comp_ker == 1
-    %order = [1:nth/2 1:nth/2]
-    %order_index = 1
+
         for ii = -nth/2+1:nth/2
-            [H,kk,rr,I,KK,RR]=dht_mod([],R,jmodes,ii);
+            [H,kk,rr,I,KK,RR]=dht([],R,jmodes,ii);
             save(['output/ker_' num2str(floor(ii))],'I','kk','rr','KK','RR')
-            %order_index = order_index+1
         end
 
     end
@@ -184,7 +179,7 @@ pp = 1+nti; % indicator of the progression in the loop
 
 tic
 
-deriv_thet = 1i*(ones(nr,1)*(-nth/2+1:nth/2));
+deriv_thet = i*(ones(nr,1)*(-nth/2+1:nth/2));
 
 for t = (nti+1)*dt:dt:T
 
@@ -200,31 +195,16 @@ for t = (nti+1)*dt:dt:T
     % loop.
 
     for ii = -nth/2+1:nth/2
-        %ii=1;
+
         load(['output/ker_' num2str(round(ii))])
-        %I(1, :) = 1;
-        %I(:, 1) = 1;
-        if abs(ii)>0
-            I(1, 1) = 1;
-            %kk(1) = 1/jmodes;
-            %KK(1) = 1/jmodes;
-            %RR(1) = 1/jmodes;
-        end
+
         % forward Hankel transform
         Fr = interp1(r,fr(:,ii+nth/2),rr,interp_sch,'extrap');
-        adht = dht_mod(Fr,RR,KK,I);
-        
-        
+        adht = dht(Fr,RR,KK,I);
+
         % inverse Hankel transform
-        Fr = idht(adht.*exp(-1i*0.5*kk.^2*dt),I,KK,RR);
-        %Fr = idht(adht,I,KK,RR);
-        
-        
+        Fr = idht(adht.*exp(-i*0.5*kk.^2*dt),I,KK,RR);
         fr(:,ii+nth/2) = interp1(rr,Fr,r,interp_sch,'extrap');
-        
-        
-        
-        
 
     end
 
@@ -241,7 +221,7 @@ for t = (nti+1)*dt:dt:T
 
     if split_NL == 0.5 || split_NL == 0 || abs(split_NL-1/3) < 1e-13
 
-        wf = wf.*exp(-1i*(V + 0.5*abs(wf).^2)*dt);
+        wf = wf.*exp(-i*(V + 0.5*abs(wf).^2)*dt);
 
     end
 
@@ -280,8 +260,8 @@ for t = (nti+1)*dt:dt:T
         save(nameout,'wf','t')
     end
     %}
-    pp = pp+1;
     
+    pp = pp+1;
     wfi = [wf wf(:,1)];
     %figure()
     colormap(jet(256));
@@ -289,14 +269,14 @@ for t = (nti+1)*dt:dt:T
     pcolor(X,Y,Z), shading interp
     %colorbar()
     %plot(X(128,:), Z(128, :));
-    axis equal tight
+    %axis equal tight
     xlabel('x')
     ylabel('y')
-    title('t=', t)
     colorbar()
     drawnow()
+    
 end
 
 toc
 
-beep
+
