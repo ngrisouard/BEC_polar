@@ -154,7 +154,7 @@ if nti == 0:        #then define all parameters
     plt.show()
     
     ##################### Compute the integration kernal ###########
-    comp_ker = 0
+    comp_ker = 1
     if comp_ker == 1:
         #nth = 10
         #order = range(0,128)

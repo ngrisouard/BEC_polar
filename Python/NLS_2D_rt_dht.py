@@ -67,7 +67,7 @@ if nti == 0:        #then define all parameters
 
     r1 = 3*R/4         #center of vortex (radius)
     theta1 = 0      #center of vortex (angle)
-    circ1 = 2       #vortex circulation
+    circ1 = 1       #vortex circulation
 
     #r2 = R/4    #center of vortex (radius)
     #theta2 = np.pi   #center of vortex (angle)

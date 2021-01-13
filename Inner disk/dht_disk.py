@@ -61,7 +61,12 @@ c        Bessel zeros
 from numpy import genfromtxt
 from scipy import special
 import numpy as np
-
+def bessel(order, a, b, x):
+    
+    temp1 = special.jv(order, b * x) * special.yv(order, a * x)
+    temp2 = special.jv(order, a * x) * special.yv(order, b * x)
+    
+    return temp1 - temp2
 
 def dht_disk(h, R0, R, c, N = 256, n = 0):
     k = None
@@ -77,27 +82,57 @@ def dht_disk(h, R0, R, c, N = 256, n = 0):
             
         
         #c = genfromtxt('dht.csv', delimiter=',')
-        inner = int(N*R0/R)
+        #radius = int(R)
+        #inner = int(N*R0/R)
         C = c[abs(n), N]
         c = c[abs(n), :N]
-        r_origin = R/C * c[:]
-        r = (R-R0)/C * c[:] + R0
-        #k = c[:] / R 
         
-        k = c[:] / (R-R0) 
-        I = abs(special.jv(n+1, c))
-        if abs(n) > 0:
-            I[0] = 1/N
+        #r_origin = R/C * c[:]
+        r = c 
+        
+        k = c 
+        
+        I = np.sqrt(special.jv(n, c * R0)**2 - special.jv(n, c * R)**2) \
+            / np.abs(c * special.jv(n, c*R))
+        #if abs(n) > 0:
+        #    I[0] = 1/N
         '''    
         
         '''
-        K = 2 * np.pi * (R-R0)/C * I[:] 
-        R = I[:]/(R-R0)
-        I = np.sqrt(2/C) / I
-        I = np.outer(I, I) * special.jv(n, np.outer(c, c/C))
+        K = I[:]
+        R = I[:] 
+        #I = np.sqrt(2) / I
+        I = np.sqrt(2) / I
+        #c_temp = np.copy(c)
+        #cut_off = int(N*R0/radius)
+        #c_temp[:cut_off] = 0
+                #k[i] = 0
+                
+        apnapm = np.outer(c,c)
+        apnb = c * R 
         
-        #if n == 0:
-        #    I = np.zeros((N, N))
+        jpyp1 = special.jv(n, apnapm)
+        yp1 = special.yv(n, apnb)
+        for i in range(N):
+            jpyp1[i, :] = jpyp1[i, :] * yp1[i]
+            
+        jpyp2 = special.yv(n, apnapm)
+        jp2 = special.jv(n, apnb)
+        for i in range(N):
+            jpyp2[i, :] = jpyp2[i, :] * jp2[i]
+            
+        
+        
+        I = np.outer(I, I) * (jpyp1 - jpyp2)
+        #I[:cut_off, :] = 0
+        #I[:, :cut_off] = 0
+        '''
+        if abs(n)>0:
+            for i in range(N):
+                if i < cut_off:
+                    I[i][i] = 1
+        '''
+        
         
     if not any(h):
         H = h

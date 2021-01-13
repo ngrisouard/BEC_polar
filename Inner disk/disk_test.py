@@ -45,7 +45,7 @@ if nti == 0:        #then define all parameters
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 2e-1
+    dt = 1
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -58,8 +58,11 @@ if nti == 0:        #then define all parameters
     theta = np.arange(0, 2*np.pi, dth)
     
     nr = 256        #radial points
-    dr = (R-R0) / (nr - 1)
-    r = np.arange(R0, R+dr, dr)
+    #dr = (R-R0) / (nr - 1)
+    dr = R / (nr - 1)
+    
+    #r = np.arange(R0, R+dr, dr)
+    r = np.arange(0, R+dr, dr)
     interp_sch = 'quadratic'
     
     jmodes = 128    #number of modes
@@ -92,7 +95,9 @@ if nti == 0:        #then define all parameters
         wf = wf * (Rad*np.exp(1j*Thet) - r3*np.exp(1j*theta3)) \
             / np.sqrt(Rad**2 + r3**2 - 2*r3*Rad*np.cos(circ3*(Thet-theta3))+1)
     
-    
+    for i in range(nr):
+        if i <= int(nr*R0//R):
+            wf[i, :] = 0
     #wf[5][5] = np.inf
     check_inf = np.zeros((256,256), int)
     np.isinf(wf, check_inf)
@@ -192,7 +197,8 @@ deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
  
 
 
-
+#adht_save = np.empty(0)
+adht_save = np.zeros((nth, jmodes), complex)
 
     # 1st step: the linear step, computation of the laplacian part.
     
@@ -224,7 +230,8 @@ for ii in range(-nth//2 +1, nth//2 +1):
     Fr = Fr_func(rr)[0]
 
     adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
-    
+    adht_save[ii+nth//2 -1, :] = adht*np.exp(-1j*0.5*(kk**2)*dt)[0]
+    #adht_save = np.append(adht_save,adht[0])
     #inverse dht
     Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
     #Fr = idht(adht, I, KK, RR)
@@ -236,7 +243,6 @@ r2 = x_of_k(kt)
 wf = obifft(kt, fr,-1)
 
     
-
 
     #2nd step NL part
 if split_NL == 0.5 or split_NL == 0 or abs(split_NL-1/3) < 1e-13:
@@ -261,4 +267,7 @@ plt.colorbar()
 plt.pause(0.05)
 plt.show()
 
+plt.figure()
+plt.pcolormesh(abs(adht_save))
+plt.colorbar()
     

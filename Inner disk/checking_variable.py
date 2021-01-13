@@ -17,7 +17,7 @@ from ngobfft import *
 from idht import *
 import os
 
-ii=10
+ii=100
 ker = io.loadmat('output/kernal/ker_%i.mat'%(ii))
 I = ker['I']
 kk = ker['kk']
