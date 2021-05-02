@@ -40,6 +40,10 @@ var/
 output/
 test/
 testing/
+*/test
+*/output
+*/testing
+
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -75,5 +79,4 @@ docs/_build/
 target/
 
 testcode.py
-
 Matlab/bessr.m

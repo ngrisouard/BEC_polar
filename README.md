@@ -9,6 +9,9 @@ Reference: Grisouard N. Quantum vortices in a glass of Bose-Einstein condensate 
 Then developed during ESC499 Engineering Science Thesis 2020-2021.
 
 Matlab: Original matlab code developed by Prof. Nicolas Grisouard
+
 Python: Code translated into Python by Rundong Zhou
+
 Interpolation: A new interpolation method was discovered and replace the original one
+
 Inner Disk: Adding an inner disk, annular domain, still under development
