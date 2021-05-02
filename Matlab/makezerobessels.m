@@ -6,10 +6,10 @@
 
 clear all
 tic
-norders = 1024;
+norders = 512;
 nzeros = 1024;
 nkind = 1;
-precision = 1e-30;
+precision = 1e-15;
 
 % scaling of the radial modes
 c = zeros(norders/2+1,nzeros+1);

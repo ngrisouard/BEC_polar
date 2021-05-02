@@ -1,12 +1,9 @@
+
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 31 20:07:35 2020
 
 @author: rundo
-
-#############################################################
-##############    Main temporal loop    #####################
-#############################################################
 """
 import numpy as np
 import numpy.ma as ma
@@ -15,6 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from scipy import io
 from scipy import interpolate
+from dht_disk import *
 from dht import *
 from ngobfft import *
 from idht import *
@@ -42,11 +40,12 @@ if nti == 0:        #then define all parameters
     else:
         V = -0.5
     
-    R = 10          #radius of the cup NORMALIZED BY THE HEALING LENGTH
+    R = 1.25          #radius of the cup NORMALIZED BY THE HEALING LENGTH
+    R0 = 1
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 5e-2
+    dt = 2e-1
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -59,8 +58,13 @@ if nti == 0:        #then define all parameters
     theta = np.arange(0, 2*np.pi, dth)
     
     nr = 256        #radial points
-    dr = R / (nr - 1)
-    r = np.arange(0, R+dr, dr)
+    
+    dr = (R-R0) / (nr - 1)
+    #dr = R / (nr - 1)
+    
+    r = np.arange(R0, R+dr, dr)
+    #r = np.arange(0, R+dr, dr)
+    
     interp_sch = 'quadratic'
     
     jmodes = 128    #number of modes
@@ -73,17 +77,19 @@ if nti == 0:        #then define all parameters
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    #r2 = R/4    #center of vortex (radius)
-    #theta2 = np.pi   #center of vortex (angle)
-    #circ2 = 1    #vortex circulation
+    #r2 = 0    #center of vortex (radius)
+    #theta2 = 0   #center of vortex (angle)
+    #circ2 = 0    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
     #circ3 = 1     #vortex circulation
-
-    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) \
-        * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
-            / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
+    
+    #* np.tanh((Rad-R0)/np.sqrt(2))
+    
+    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) * np.tanh((Rad-R0)/np.sqrt(2))\
+    #    * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
+    #        / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
             
     if 'r2' in locals():
         wf = wf * (Rad*np.exp(1j*circ2*Thet) - r2*np.exp(1j*circ2*theta2)) \
@@ -92,7 +98,11 @@ if nti == 0:        #then define all parameters
     if 'r3' in locals():
         wf = wf * (Rad*np.exp(1j*Thet) - r3*np.exp(1j*theta3)) \
             / np.sqrt(Rad**2 + r3**2 - 2*r3*Rad*np.cos(circ3*(Thet-theta3))+1)
-    
+    '''
+    for i in range(nr):
+        if i <= int(nr*R0//R):
+            wf[i, :] = 0
+    '''
     
     #wf[5][5] = np.inf
     check_inf = np.zeros((256,256), int)
@@ -129,6 +139,7 @@ if nti == 0:        #then define all parameters
     z_max = np.max(Z)
     z_min = np.min(Z)
 
+
     plt.figure(figsize = (10, 8))
     plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
     plt.title('t=0')
@@ -136,12 +147,16 @@ if nti == 0:        #then define all parameters
     plt.show()
     
     ##################### Compute the integration kernal ###########
-    comp_ker = 0
+    comp_ker = 1
     if comp_ker == 1:
-        bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+
+        bessel_zeros = np.genfromtxt('dht_ring.csv', delimiter=',')
+
         for ii in range(-nth//2+1, nth//2+1):
 
-            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+            #H,kk,rr,I,KK,RR, h = dht_disk([],R0,R,bessel_zeros,jmodes,ii)
+            H,kk,rr,I,KK,RR, h = dht_disk([],R0,R,bessel_zeros,jmodes,ii)
+
             save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
             io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
             
@@ -151,7 +166,6 @@ if nti == 0:        #then define all parameters
     io.savemat(nameout, {'wf':wf, 't':t})
     npi = 8          # # of digits following psi_
     
-    '''
     misc = {'r':r, 'theta':theta, 'T':T, 'nt':nt, 'dt':dt, 'nth':nth, 
                  'dth':dth, 'nr':nr, 'dr':dr, 'R':R, 'ppskip':ppskip, 'Rad':Rad,
                  'Thet':Thet, 'npi':npi, 'V':V, 'comp_ker':comp_ker, 'interp_sch':
@@ -164,7 +178,7 @@ if nti == 0:        #then define all parameters
         misc.update({'r2':r2, 'theta2':theta2, 'circ2':circ2})
     
     io.savemat('output/misc.mat', misc)
-    '''
+
     
 ############### then reload all the parameters and last iteration
 else:
@@ -206,6 +220,7 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
 
     for ii in range(-nth//2 +1, nth//2 +1):
     
+        #ii = -11
         ker = io.loadmat('output/kernal/ker_%i.mat'%(ii))
         I = ker['I']
         kk = ker['kk']
@@ -213,16 +228,20 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
         rr = ker['rr']
         RR = ker['RR']
         
-        if abs(ii) > 0:
-            I[0, 0] = 1
+        #if abs(ii) > 0:
+        #    I[0, 0] = 0
     
         #forward dht
         Fr_func = interpolate.interp1d(r, fr[:, ii-1+nth//2], kind=interp_sch, fill_value='extrapolate')
         Fr = Fr_func(rr)[0]
-        #Fr = Fr.flatten()
+
         adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
-    
+
+        
         #inverse dht
+        
+        
+        
         Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
         #Fr = idht(adht, I, KK, RR)
         fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
@@ -245,8 +264,12 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     
     #3rd step dssipation not yet implemented
     ###
-
-
+    '''
+    for i in range(nr):
+        if i <= 128:
+            wf[i, :] = 0
+    '''
+    
     wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
     wfi[:wf.shape[0], :wf.shape[1]] = wf
 
@@ -256,8 +279,10 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     #Z = np.angle(wfi)
     Z = np.abs(wfi)**2
     plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+    plt.pcolor(X, Y, Z, cmap=cm.jet)
     plt.title('t=%f'%t)
     plt.colorbar()
     plt.pause(0.05)
     plt.show()
+    
+    pp += 1

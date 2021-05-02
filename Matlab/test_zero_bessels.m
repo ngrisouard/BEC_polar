@@ -10,7 +10,7 @@ tic
 for n = 0:nth/2
     %zero_bess_t(:,n+nth/2) = JnRoots(n,jmodes+1);
     %zero_bess_u(:,n+nth/2) = besselzero(n,jmodes+1,1);
-    zero_bess_v(:,n+nth/2) = bessel_zeros(1,n,jmodes+1,1e-14);
+    zero_bess_v(:,n+nth/2) = bessel_zeros(1,n,jmodes+1,1e-15);
     % WARNING: the 0-order bessel function of the 1st kind is described
     % by n-index = nth/2, etc. Therefore, expect a lot of confusion.
 end
@@ -40,5 +40,9 @@ toc
 %pcolor(log(real(plottestu))), shading flat
 %colorbar
 figure(2)
-pcolor(log10(abs(real(plottestv)))), shading flat
+pcolor(abs(real(plottestv))), shading flat
+ylabel('q-th order Bessel function')
+xlabel('j-th root')
+title('Bessel function roots test (MATLAB)')
 colorbar
+set(gca,'ColorScale','log')

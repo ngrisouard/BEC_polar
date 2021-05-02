@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """
 Created on Sat Oct 31 20:07:35 2020
@@ -12,12 +11,12 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from scipy import io
 from scipy import interpolate
-from dht_disk import *
 from dht import *
 from ngobfft import *
 from idht import *
+from dht_test import *
 import os
-
+from conservative import *
 
 if os.path.isdir('./output') == False:
     os.mkdir('./output')
@@ -26,7 +25,7 @@ if os.path.isdir('./output') == False:
 
 
 nti = 0             #starting iteration (loads the last file of the previous run)
-ntn = 100           #final iteration of the current run
+ntn = 500           #final iteration of the current run
 
 
 if nti == 0:        #then define all parameters
@@ -41,11 +40,10 @@ if nti == 0:        #then define all parameters
         V = -0.5
     
     R = 10          #radius of the cup NORMALIZED BY THE HEALING LENGTH
-    R0 = 8
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 2e-1
+    dt = 5e-3
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -58,13 +56,8 @@ if nti == 0:        #then define all parameters
     theta = np.arange(0, 2*np.pi, dth)
     
     nr = 256        #radial points
-    
-    dr = (R-R0) / (nr - 1)
-    #dr = R / (nr - 1)
-    
-    r = np.arange(R0, R+dr, dr)
-    #r = np.arange(0, R+dr, dr)
-    
+    dr = R / (nr - 1)
+    r = np.arange(0, R+dr, dr)
     interp_sch = 'quadratic'
     
     jmodes = 128    #number of modes
@@ -77,19 +70,17 @@ if nti == 0:        #then define all parameters
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    #r2 = 0    #center of vortex (radius)
-    #theta2 = 0   #center of vortex (angle)
-    #circ2 = 0    #vortex circulation
+    #r2 = 3*R/8    #center of vortex (radius)
+    #theta2 = np.pi   #center of vortex (angle)
+    #circ2 = 1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
     #circ3 = 1     #vortex circulation
-    
-    #* np.tanh((Rad-R0)/np.sqrt(2))
-    
-    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) * np.tanh((Rad-R0)/np.sqrt(2))\
-    #    * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
-    #        / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
+
+    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(1j*Thet) \
+        #* (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
+        #    / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
             
     if 'r2' in locals():
         wf = wf * (Rad*np.exp(1j*circ2*Thet) - r2*np.exp(1j*circ2*theta2)) \
@@ -98,11 +89,7 @@ if nti == 0:        #then define all parameters
     if 'r3' in locals():
         wf = wf * (Rad*np.exp(1j*Thet) - r3*np.exp(1j*theta3)) \
             / np.sqrt(Rad**2 + r3**2 - 2*r3*Rad*np.cos(circ3*(Thet-theta3))+1)
-    '''
-    for i in range(nr):
-        if i <= int(nr*R0//R):
-            wf[i, :] = 0
-    '''
+    
     
     #wf[5][5] = np.inf
     check_inf = np.zeros((256,256), int)
@@ -135,11 +122,32 @@ if nti == 0:        #then define all parameters
     
     
     Z = np.abs(wfi)**2
-    #Z = np.angle(wfi)
+    Z# = np.angle(wfi)
     z_max = np.max(Z)
     z_min = np.min(Z)
+    '''    
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    #ax.set_aspect('equal')
+    bar = ax.plot_surface(X, Y, Z, cmap=cm.jet)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_xlim(10, -10)
+    #ax.set_zlim(0,1)
+    
+    max_range = np.array([X.max()-X.min(), Y.max()-Y.min(), Z.max()-Z.min()]).max()
+    Xb = 0.5*max_range*np.mgrid[-1:2:2,-1:2:2,-1:2:2][0].flatten() + 0.5*(X.max()+X.min())
+    Yb = 0.5*max_range*np.mgrid[-1:2:2,-1:2:2,-1:2:2][1].flatten() + 0.5*(Y.max()+Y.min())
+    Zb = 0.5*max_range*np.mgrid[-1:2:2,-1:2:2,-1:2:2][2].flatten() + 0.5*(Z.max()+Z.min())
+    # Comment or uncomment following both lines to test the fake bounding box:
+    for xb, yb, zb in zip(Xb, Yb, Zb):
+        ax.plot([xb], [yb], [zb], 'w')
+    
+    fig.colorbar(bar, shrink=0.5, aspect=8)
 
-
+    plt.grid()
+    plt.show()
+    '''
     plt.figure(figsize = (10, 8))
     plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
     plt.title('t=0')
@@ -147,16 +155,16 @@ if nti == 0:        #then define all parameters
     plt.show()
     
     ##################### Compute the integration kernal ###########
-    comp_ker = 1
+    comp_ker = 0
     if comp_ker == 1:
-
-        bessel_zeros = np.genfromtxt('dht_ring.csv', delimiter=',')
-
+        #nth = 10
+        #order = range(0,128)
+        bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+        #for ii in range(0,10):
         for ii in range(-nth//2+1, nth//2+1):
-
-            #H,kk,rr,I,KK,RR, h = dht_disk([],R0,R,bessel_zeros,jmodes,ii)
-            H,kk,rr,I,KK,RR, h = dht_disk([],R0,R,bessel_zeros,jmodes,ii)
-
+            #H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+            H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+            #print(order[ii])
             save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
             io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
             
@@ -202,8 +210,9 @@ deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
 
 
  
-
-
+energy = [compute_energy(wf, dr, dth, Rad)]
+L = [compute_L(wf, dr, dth, Rad)]
+count = 0
 
 for t in np.arange((nti+1)*dt, T+dt, dt):
     # 1st step: the linear step, computation of the laplacian part.
@@ -229,21 +238,17 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
         RR = ker['RR']
         
         if abs(ii) > 0:
-            I[0, 0] = 0
+            I[0, 0] = 1
     
         #forward dht
         Fr_func = interpolate.interp1d(r, fr[:, ii-1+nth//2], kind=interp_sch, fill_value='extrapolate')
         Fr = Fr_func(rr)[0]
-
+        #Fr = Fr.flatten()
         adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
-
-        
+    
         #inverse dht
-        
-        
-        
-        #Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
-        Fr = idht(adht, I, KK, RR)
+        Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
+        #Fr = idht(adht, I, KK, RR)
         fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
         fr[:, ii-1+nth//2] = fr_func(r)
     
@@ -264,25 +269,44 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     
     #3rd step dssipation not yet implemented
     ###
-    '''
-    for i in range(nr):
-        if i <= 128:
-            wf[i, :] = 0
-    '''
     
-    wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
-    wfi[:wf.shape[0], :wf.shape[1]] = wf
+    if count%1 < 0.5:
+        wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+        wfi[:wf.shape[0], :wf.shape[1]] = wf
 
-    for i in range(wfi.shape[0]):
-        wfi[i][-1] = wf[i][0]
+        for i in range(wfi.shape[0]):
+            wfi[i][-1] = wf[i][0]
+        
+    #Z = np.angle(wfi)
+        Z = np.abs(wfi)**2
+        plt.figure(figsize = (10, 8))
+        plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+        title = 'old interpolate,t=%.3f'%t
+        #plt.title(title+',dt = %.4f'%dt)
+        plt.colorbar()
+        plt.pause(0.05)
+        plt.show()
+        
+    count += 1
+    energy.append(compute_energy(wf, dr, dth, Rad))
+    L.append(compute_L(wf, dr, dth, Rad))
+    
+wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+wfi[:wf.shape[0], :wf.shape[1]] = wf
+
+for i in range(wfi.shape[0]):
+    wfi[i][-1] = wf[i][0]
 
     #Z = np.angle(wfi)
-    Z = np.abs(wfi)**2
-    plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)
-    plt.title('t=%f'%t)
-    plt.colorbar()
-    plt.pause(0.05)
-    plt.show()
-    
-    pp += 1
+Z = np.abs(wfi)**2
+plt.figure(figsize = (10, 8))
+plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+title = 'old interpolate,t=%.3f'%t
+plt.title(title+',dt = %.4f'%dt)
+plt.colorbar()
+plt.pause(0.05)
+plt.show()
+save_dict_E = {'E':energy}
+io.savemat('./output/kernal/energy_old', save_dict_E)
+save_dict_L = {'L':L}
+io.savemat('./output/kernal/L_old', save_dict_L)

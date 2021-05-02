@@ -20,7 +20,7 @@ ntn = 100; % final iteration of the current run
 
 if nti == 0 % then define all parameters
 
-    comp_ker = 1; % =1 if the values of the kernel have to be computed
+    comp_ker = 0; % =1 if the values of the kernel have to be computed
 
     split_NL = 0.5; % =0.5 for NLS, =1 for LS, =1/3 for NLS with dissipation
     if split_NL == 1
@@ -36,7 +36,7 @@ if nti == 0 % then define all parameters
     %% Time and spatial coordinates
 
     nt = ntn;
-    dt = 5e-3; T = nt*dt;
+    dt = 0.2; T = nt*dt;
     ppskip = 40; % interval between two written outputs
     if nti > 0
         comp_ker = 0;
@@ -57,7 +57,7 @@ if nti == 0 % then define all parameters
 
     %% Initial condition
 
-    r1 = 0; % center of vortex (radius)
+    r1 = 3*R/8; % center of vortex (radius)
     theta1 = 0; % center of vortex (angle)
     circ1 = 1; % vortex circulation
 
@@ -70,7 +70,7 @@ if nti == 0 % then define all parameters
     % circ3 = 1; % vortex circulation
 
 
-    wf = tanh((R-Rad)/sqrt(2)).*exp(1i*7*Thet)... % background
+    wf = tanh((R-Rad)/sqrt(2)).*exp(1i*0*Thet)... % background
         .*(Rad.*exp(1i*circ1*Thet) - r1*exp(1i*circ1*theta1))... % 1st vortex
         ./sqrt(Rad.^2 + r1.^2 - 2*r1*Rad.*cos(circ1*(Thet-theta1)) + 1);
     if exist('r2','var')

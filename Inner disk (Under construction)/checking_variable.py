@@ -24,3 +24,4 @@ kk = ker['kk']
 KKa = ker['KK']
 rr = ker['rr']
 RRa = ker['RR']
+bessel_zeros = np.genfromtxt('dht_ring.csv', delimiter=',')

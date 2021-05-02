@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Sat Oct 31 20:07:35 2020
 
 @author: rundo
-
-#############################################################
-##############    Main temporal loop    #####################
-#############################################################
 """
 import numpy as np
 import numpy.ma as ma
@@ -18,6 +15,8 @@ from scipy import interpolate
 from dht import *
 from ngobfft import *
 from idht import *
+from interpolation import *
+from conservative import *
 import os
 
 
@@ -46,7 +45,7 @@ if nti == 0:        #then define all parameters
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 5e-2
+    dt = 5e-3
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -73,9 +72,9 @@ if nti == 0:        #then define all parameters
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    #r2 = R/4    #center of vortex (radius)
-    #theta2 = np.pi   #center of vortex (angle)
-    #circ2 = 1    #vortex circulation
+    #r2 = 3*R/4    #center of vortex (radius)
+    #theta2 = np.pi/4   #center of vortex (angle)
+    #circ2 = -1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
@@ -125,33 +124,52 @@ if nti == 0:        #then define all parameters
     
     
     Z = np.abs(wfi)**2
-    #Z = np.angle(wfi)
+    #Z = np.angle(wfi)          #plot phase
     z_max = np.max(Z)
     z_min = np.min(Z)
 
     plt.figure(figsize = (10, 8))
     plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
-    plt.title('t=0')
+    #plt.title('t=0')
     plt.colorbar()
     plt.show()
     
-    ##################### Compute the integration kernal ###########
+    ##################### Compute the integration kernal and interpolation kernal ###########
     comp_ker = 0
+    comp_interp = 0            # compute interpolation kernal
+    
     if comp_ker == 1:
+
         bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+
         for ii in range(-nth//2+1, nth//2+1):
 
             H,kk,rr,I,KK,RR, h = dht([],R,bessel_zeros,jmodes,ii)
+
             save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
             io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
+      
+    
+    if comp_interp == 1:
+        bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+        for ii in range(-nth//2+1, nth//2+1):
             
+            interp_ker = compute_interp(r, R, ii, bessel_zeros, jmodes)
+            save_dict = {'interp_ker':interp_ker}
+            io.savemat('./output/kernal/interp_ker_%i.mat'%ii, save_dict)
+    elif comp_interp == 2:
+        bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
+        for ii in range(-nth//2+1, nth//2+1):
+            
+            interp_ker = compute_interp_alt(r, R, ii, bessel_zeros, jmodes)
+            save_dict = {'interp_ker':interp_ker}
+            io.savemat('./output/kernal/interp_ker_%i.mat'%ii, save_dict)
         
     t = 0
     nameout = 'output/psi_00000000.mat'
     io.savemat(nameout, {'wf':wf, 't':t})
     npi = 8          # # of digits following psi_
     
-    '''
     misc = {'r':r, 'theta':theta, 'T':T, 'nt':nt, 'dt':dt, 'nth':nth, 
                  'dth':dth, 'nr':nr, 'dr':dr, 'R':R, 'ppskip':ppskip, 'Rad':Rad,
                  'Thet':Thet, 'npi':npi, 'V':V, 'comp_ker':comp_ker, 'interp_sch':
@@ -164,7 +182,7 @@ if nti == 0:        #then define all parameters
         misc.update({'r2':r2, 'theta2':theta2, 'circ2':circ2})
     
     io.savemat('output/misc.mat', misc)
-    '''
+
     
 ############### then reload all the parameters and last iteration
 else:
@@ -183,13 +201,14 @@ nti = 0
 nr = 256
 nth = 256
 pp = nti + 1
-bessel_zeros = 0 #np.genfromtxt('dht.csv', delimiter=',')
+bessel_zeros = np.genfromtxt('dht.csv', delimiter=',')
 deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
 
 
  
-
-
+count = 0
+energy = [compute_energy(wf, dr, dth, Rad)]
+L = [compute_L(wf, dr, dth, Rad)]
 
 for t in np.arange((nti+1)*dt, T+dt, dt):
     # 1st step: the linear step, computation of the laplacian part.
@@ -206,27 +225,34 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
 
     for ii in range(-nth//2 +1, nth//2 +1):
     
+        #ii = -11
         ker = io.loadmat('output/kernal/ker_%i.mat'%(ii))
         I = ker['I']
         kk = ker['kk']
         KK = ker['KK']
         rr = ker['rr']
         RR = ker['RR']
+        interp = io.loadmat('output/kernal/interp_ker_%i.mat'%(ii))
+        interp_ker = interp['interp_ker']
         
         if abs(ii) > 0:
             I[0, 0] = 1
-    
+
         #forward dht
+        
         Fr_func = interpolate.interp1d(r, fr[:, ii-1+nth//2], kind=interp_sch, fill_value='extrapolate')
         Fr = Fr_func(rr)[0]
-        #Fr = Fr.flatten()
         adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
     
         #inverse dht
         Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
-        #Fr = idht(adht, I, KK, RR)
-        fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
-        fr[:, ii-1+nth//2] = fr_func(r)
+        
+        fr[:, ii-1+nth//2] = np.dot(Fr[0], interp_ker)
+        
+        # Old interpolation method
+        
+        #fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
+        #fr[:, ii-1+nth//2] = fr_func(r)
     
     r2 = x_of_k(kt)
     wf = obifft(kt, fr,-1)
@@ -246,18 +272,48 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     #3rd step dssipation not yet implemented
     ###
 
+    if count%5 < 0.5:
+        wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+        wfi[:wf.shape[0], :wf.shape[1]] = wf
 
-    wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
-    wfi[:wf.shape[0], :wf.shape[1]] = wf
+        for i in range(wfi.shape[0]):
+            wfi[i][-1] = wf[i][0]
 
-    for i in range(wfi.shape[0]):
-        wfi[i][-1] = wf[i][0]
+
+        Z = np.abs(wfi)**2
+        #Z = np.angle(wfi)
+        plt.figure(figsize = (10, 8))
+        plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+        title = 'new interpolate,t=%.3f'%t
+        #plt.title(title+',dt = %.4f'%dt)
+        plt.colorbar()
+        #plt.pause(0.05)
+        plt.show()
+        
+    count += 1
+    energy.append(compute_energy(wf, dr, dth, Rad))
+    L.append(compute_L(wf, dr, dth, Rad))
+
+wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+wfi[:wf.shape[0], :wf.shape[1]] = wf
+
+for i in range(wfi.shape[0]):
+    wfi[i][-1] = wf[i][0]
 
     #Z = np.angle(wfi)
-    Z = np.abs(wfi)**2
-    plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
-    plt.title('t=%f'%t)
-    plt.colorbar()
-    plt.pause(0.05)
-    plt.show()
+Z = np.abs(wfi)**2
+plt.figure(figsize = (10, 8))
+plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+title = 'new interpolate,t=%.3f'%t
+plt.title(title+',dt = %.4f'%dt)
+plt.colorbar()
+plt.pause(0.05)
+plt.show()
+
+
+#%% check conservatives
+
+save_dict_E = {'E':energy}
+io.savemat('./output/kernal/energy_new', save_dict_E)
+save_dict_L = {'L':L}
+io.savemat('./output/kernal/L_new', save_dict_L)

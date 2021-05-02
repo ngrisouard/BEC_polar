@@ -14,8 +14,9 @@ from scipy import interpolate
 from dht import *
 from ngobfft import *
 from idht import *
+from dht_test import *
 import os
-
+from conservative import *
 
 if os.path.isdir('./output') == False:
     os.mkdir('./output')
@@ -24,7 +25,7 @@ if os.path.isdir('./output') == False:
 
 
 nti = 0             #starting iteration (loads the last file of the previous run)
-ntn = 100           #final iteration of the current run
+ntn = 500           #final iteration of the current run
 
 
 if nti == 0:        #then define all parameters
@@ -42,7 +43,7 @@ if nti == 0:        #then define all parameters
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 2e-1
+    dt = 5e-3
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -69,17 +70,17 @@ if nti == 0:        #then define all parameters
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    r2 = 3*R/4    #center of vortex (radius)
-    theta2 = np.pi   #center of vortex (angle)
-    circ2 = 1    #vortex circulation
+    #r2 = 3*R/8    #center of vortex (radius)
+    #theta2 = np.pi   #center of vortex (angle)
+    #circ2 = 1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
     #circ3 = 1     #vortex circulation
 
-    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) \
-        * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
-            / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
+    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(1j*Thet) \
+        #* (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
+        #    / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
             
     if 'r2' in locals():
         wf = wf * (Rad*np.exp(1j*circ2*Thet) - r2*np.exp(1j*circ2*theta2)) \
@@ -154,7 +155,7 @@ if nti == 0:        #then define all parameters
     plt.show()
     
     ##################### Compute the integration kernal ###########
-    comp_ker = 1
+    comp_ker = 0
     if comp_ker == 1:
         #nth = 10
         #order = range(0,128)
@@ -209,8 +210,9 @@ deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
 
 
  
-
-
+energy = [compute_energy(wf, dr, dth, Rad)]
+L = [compute_L(wf, dr, dth, Rad)]
+count = 0
 
 for t in np.arange((nti+1)*dt, T+dt, dt):
     # 1st step: the linear step, computation of the laplacian part.
@@ -246,6 +248,7 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     
         #inverse dht
         Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
+        #Fr = idht(adht, I, KK, RR)
         fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
         fr[:, ii-1+nth//2] = fr_func(r)
     
@@ -266,19 +269,44 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     
     #3rd step dssipation not yet implemented
     ###
+    
+    if count%1 < 0.5:
+        wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+        wfi[:wf.shape[0], :wf.shape[1]] = wf
 
+        for i in range(wfi.shape[0]):
+            wfi[i][-1] = wf[i][0]
+        
+    #Z = np.angle(wfi)
+        Z = np.abs(wfi)**2
+        plt.figure(figsize = (10, 8))
+        plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+        title = 'old interpolate,t=%.3f'%t
+        #plt.title(title+',dt = %.4f'%dt)
+        plt.colorbar()
+        plt.pause(0.05)
+        plt.show()
+        
+    count += 1
+    energy.append(compute_energy(wf, dr, dth, Rad))
+    L.append(compute_L(wf, dr, dth, Rad))
+    
+wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+wfi[:wf.shape[0], :wf.shape[1]] = wf
 
-    wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
-    wfi[:wf.shape[0], :wf.shape[1]] = wf
-
-    for i in range(wfi.shape[0]):
-        wfi[i][-1] = wf[i][0]
+for i in range(wfi.shape[0]):
+    wfi[i][-1] = wf[i][0]
 
     #Z = np.angle(wfi)
-    Z = np.abs(wfi)**2
-    plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
-    plt.title('t=%f'%t)
-    plt.colorbar()
-    plt.pause(0.05)
-    plt.show()
+Z = np.abs(wfi)**2
+plt.figure(figsize = (10, 8))
+plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+title = 'old interpolate,t=%.3f'%t
+plt.title(title+',dt = %.4f'%dt)
+plt.colorbar()
+plt.pause(0.05)
+plt.show()
+save_dict_E = {'E':energy}
+io.savemat('./output/kernal/energy_old', save_dict_E)
+save_dict_L = {'L':L}
+io.savemat('./output/kernal/L_old', save_dict_L)
