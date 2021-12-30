@@ -18,6 +18,7 @@ from idht import *
 from interpolation import *
 from conservative import *
 import os
+import colorcet as cc
 
 
 if os.path.isdir('./output') == False:
@@ -27,7 +28,7 @@ if os.path.isdir('./output') == False:
 
 
 nti = 0             #starting iteration (loads the last file of the previous run)
-ntn = 100           #final iteration of the current run
+ntn = 200           #final iteration of the current run
 
 
 if nti == 0:        #then define all parameters
@@ -45,7 +46,7 @@ if nti == 0:        #then define all parameters
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 5e-3
+    dt = 5e-2
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -68,13 +69,13 @@ if nti == 0:        #then define all parameters
     
 ############### Initial condition #########################
 
-    r1 = 3*R/4         #center of vortex (radius)
-    theta1 = 0      #center of vortex (angle)
+    r1 = 2*R/4         #center of vortex (radius)
+    theta1 = 3*np.pi/4      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    #r2 = 3*R/4    #center of vortex (radius)
-    #theta2 = np.pi/4   #center of vortex (angle)
-    #circ2 = -1    #vortex circulation
+    r2 = 2*R/4    #center of vortex (radius)
+    theta2 = np.pi/4   #center of vortex (angle)
+    circ2 = 1    #vortex circulation
 
     #r3 = 3*R/8    #center of vortex (radius)
     #theta3 = 0    #center of vortex (angle)
@@ -129,7 +130,7 @@ if nti == 0:        #then define all parameters
     z_min = np.min(Z)
 
     plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+    plt.pcolor(X, Y, Z, cmap=cc.cm.rainbow)#, vmax = z_max, vmin = z_min)
     #plt.title('t=0')
     plt.colorbar()
     plt.show()
@@ -217,15 +218,13 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     fr = obfft(Thet[0], wf, -1) #fft to isolate every angular mode
     
     if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
-        r2 = x_of_k(kt)    
+        #r2 = x_of_k(kt)    
         dwfdt = obifft(kt, deriv_thet*fr, -1)
 
 
 
 
     for ii in range(-nth//2 +1, nth//2 +1):
-    
-        #ii = -11
         ker = io.loadmat('output/kernal/ker_%i.mat'%(ii))
         I = ker['I']
         kk = ker['kk']
@@ -254,7 +253,7 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
         #fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
         #fr[:, ii-1+nth//2] = fr_func(r)
     
-    r2 = x_of_k(kt)
+    #r2 = x_of_k(kt)
     wf = obifft(kt, fr,-1)
 
     if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
@@ -272,7 +271,7 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
     #3rd step dssipation not yet implemented
     ###
 
-    if count%5 < 0.5:
+    if count%1 < 0.5:
         wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
         wfi[:wf.shape[0], :wf.shape[1]] = wf
 
@@ -283,11 +282,10 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
         Z = np.abs(wfi)**2
         #Z = np.angle(wfi)
         plt.figure(figsize = (10, 8))
-        plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+        plt.pcolor(X, Y, Z, cmap=cc.cm.rainbow)#, vmax = z_max, vmin = z_min)
         title = 'new interpolate,t=%.3f'%t
         #plt.title(title+',dt = %.4f'%dt)
         plt.colorbar()
-        #plt.pause(0.05)
         plt.show()
         
     count += 1
@@ -299,16 +297,16 @@ wfi[:wf.shape[0], :wf.shape[1]] = wf
 
 for i in range(wfi.shape[0]):
     wfi[i][-1] = wf[i][0]
-
     #Z = np.angle(wfi)
-Z = np.abs(wfi)**2
-plt.figure(figsize = (10, 8))
-plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
-title = 'new interpolate,t=%.3f'%t
-plt.title(title+',dt = %.4f'%dt)
-plt.colorbar()
-plt.pause(0.05)
-plt.show()
+    
+# Z = np.abs(wfi)**2
+# plt.figure(figsize = (10, 8))
+# plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+# title = 'new interpolate,t=%.3f'%t
+# plt.title(title+',dt = %.4f'%dt)
+# plt.colorbar()
+# plt.pause(0.05)
+# plt.show()
 
 
 #%% check conservatives

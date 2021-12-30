@@ -6,9 +6,9 @@
 
 clear all
 tic
-norders = 512;
-nzeros = 1024;
-nkind = 1;
+norders = 256;
+nzeros = 256;
+nkind = 3;
 precision = 1e-15;
 
 % scaling of the radial modes
@@ -19,6 +19,6 @@ for n = 1:norders/2
     c(n+1,2:nzeros+1) = bessel_zeros(nkind,n,nzeros,precision);
 end
 toc
-save('dht.mat','c')
+save('dht_neumann.mat','c')
 
 beep

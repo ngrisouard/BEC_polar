@@ -34,7 +34,7 @@ def compute_interp(r, R, n, bessel_zeros, N):
     for j in range(len(r)):
             
         denominator = (special.jn(n+1, jnk)*(jnk**2-(r[j]*W/R)**2))
-        if abs(n) > 0:
+        if abs(n) >= 0:
             denominator[0] = 1/N
             
         I[:,j] = 2*jnk*special.jn(n, r[j]*W/R)/denominator

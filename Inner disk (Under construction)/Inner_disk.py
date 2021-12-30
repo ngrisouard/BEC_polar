@@ -12,12 +12,13 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from scipy import io
 from scipy import interpolate
-from dht_disk import *
+from dht_annular import *
 from dht import *
 from ngobfft import *
 from idht import *
 import os
-
+import colorcet as cc
+from conservative import *
 
 if os.path.isdir('./output') == False:
     os.mkdir('./output')
@@ -26,7 +27,7 @@ if os.path.isdir('./output') == False:
 
 
 nti = 0             #starting iteration (loads the last file of the previous run)
-ntn = 100           #final iteration of the current run
+ntn = 500           #final iteration of the current run
 
 
 if nti == 0:        #then define all parameters
@@ -45,7 +46,7 @@ if nti == 0:        #then define all parameters
     
 ############## Time and spatial coordinates ##############    
     nt = ntn
-    dt = 2e-1
+    dt = 2e-4
     T = nt * dt
     
     ppskip = 40     #interval between two written outputs
@@ -70,26 +71,28 @@ if nti == 0:        #then define all parameters
     jmodes = 128    #number of modes
     
     Thet, Rad = np.meshgrid(theta, r)
-    
+    bessel_zeros = np.genfromtxt('dht_ring_1_25.csv', delimiter=',')
 ############### Initial condition #########################
-
-    r1 = 3*R/4         #center of vortex (radius)
+    
+    r1 = 6*R/7         #center of vortex (radius)
     theta1 = 0      #center of vortex (angle)
     circ1 = 1       #vortex circulation
 
-    #r2 = 0    #center of vortex (radius)
-    #theta2 = 0   #center of vortex (angle)
-    #circ2 = 0    #vortex circulation
+    #r2 = 5*R/6    #center of vortex (radius)
+    #theta2 = np.pi   #center of vortex (angle)
+    #circ2 = -1    #vortex circulation
 
-    #r3 = 3*R/8    #center of vortex (radius)
-    #theta3 = 0    #center of vortex (angle)
+    #r3 = 5*R/6    #center of vortex (radius)
+    #theta3 = np.pi/2    #center of vortex (angle)
     #circ3 = 1     #vortex circulation
     
     #* np.tanh((Rad-R0)/np.sqrt(2))
-    
-    wf = np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) * np.tanh((Rad-R0)/np.sqrt(2))\
-    #    * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
-    #        / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
+    #bessel(3, R, Rad, bessel_zeros[3, 1])\
+    #bessel(3, R, Rad, bessel_zeros[3, 1])*
+    #*np.tanh((R-Rad)/np.sqrt(2)) * np.exp(0j*Thet) * np.tanh((Rad-R0)/np.sqrt(2))
+    wf =  bessel(3, R0, R, Rad, bessel_zeros[3, 0]) *np.exp(-1j*Thet)  *np.cos(2*Thet)\
+        * (Rad * np.exp(1j*circ1*Thet) - r1 * np.exp(1j*circ1*theta1)) \
+            / np.sqrt(Rad**2 + r1**2 - 2*r1*Rad*np.cos(circ1*(Thet - theta1))+1)
             
     if 'r2' in locals():
         wf = wf * (Rad*np.exp(1j*circ2*Thet) - r2*np.exp(1j*circ2*theta2)) \
@@ -105,11 +108,11 @@ if nti == 0:        #then define all parameters
     '''
     
     #wf[5][5] = np.inf
-    check_inf = np.zeros((256,256), int)
-    np.isinf(wf, check_inf)
+    #check_inf = np.zeros((256,256), int)
+    #np.isinf(wf, check_inf)
     
-    wf = ma.masked_array(data = wf, mask = check_inf,
-                    fill_value = 0, dtype = complex)
+    #wf = ma.masked_array(data = wf, mask = check_inf,
+    #                fill_value = 0, dtype = complex)
     
     Theti = np.zeros((Thet.shape[0], Thet.shape[1]+1), float)
     Theti[:Thet.shape[0], :Thet.shape[1]] = Thet
@@ -141,24 +144,25 @@ if nti == 0:        #then define all parameters
 
 
     plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)#, vmax = z_max, vmin = z_min)
+    plt.pcolor(X, Y, Z, cmap=cc.cm.fire)#, vmax = 1e-4, vmin = 0)
     plt.title('t=0')
     plt.colorbar()
     plt.show()
     
     ##################### Compute the integration kernal ###########
-    comp_ker = 1
+    comp_ker = 0
     if comp_ker == 1:
 
-        bessel_zeros = np.genfromtxt('dht_ring.csv', delimiter=',')
+        #bessel_zeros = np.genfromtxt('dht_ring.csv_1_1', delimiter=',')
 
         for ii in range(-nth//2+1, nth//2+1):
 
             #H,kk,rr,I,KK,RR, h = dht_disk([],R0,R,bessel_zeros,jmodes,ii)
-            H,kk,rr,I,KK,RR, h = dht_disk([],R0,R,bessel_zeros,jmodes,ii)
+            Forward, Backward, KK, RR = dht_annular(r, R0, R, bessel_zeros, jmodes, ii)
 
-            save_dict = {'kk':kk, 'rr':rr, 'KK':KK, 'RR':RR, 'I':I}
+            save_dict = {'KK':KK, 'RR':RR, 'F':Forward, 'B':Backward}
             io.savemat('./output/kernal/ker_%i.mat'%ii, save_dict)
+            print(ii)
             
         
     t = 0
@@ -200,61 +204,61 @@ pp = nti + 1
 bessel_zeros = 0 #np.genfromtxt('dht.csv', delimiter=',')
 deriv_thet = 1j*(np.outer(np.ones(nr), np.arange(-nth//2+1, nth//2+1)))
 
+count = 0
+energy = [compute_energy(wf, dr, dth, Rad)]
+L = [compute_L(wf, dr, dth, Rad)]
 
- 
 
 
 
 for t in np.arange((nti+1)*dt, T+dt, dt):
     # 1st step: the linear step, computation of the laplacian part.
     
-    kt = k_of_x(Thet[0]) 
+    kt = k_of_x(Thet[0])
     fr = obfft(Thet[0], wf, -1) #fft to isolate every angular mode
     
-    if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
-        r2 = x_of_k(kt)    
-        dwfdt = obifft(kt, deriv_thet*fr, -1)
-
-
+    #if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
+    #    r10 = x_of_k(kt)
+    #    dwfdt = obifft(kt, deriv_thet*fr, -1)
 
 
     for ii in range(-nth//2 +1, nth//2 +1):
-    
+        
         #ii = -11
         ker = io.loadmat('output/kernal/ker_%i.mat'%(ii))
-        I = ker['I']
-        kk = ker['kk']
+        F = ker['F']
+        B = ker['B']
         KK = ker['KK']
-        rr = ker['rr']
         RR = ker['RR']
         
         #if abs(ii) > 0:
         #    I[0, 0] = 0
     
         #forward dht
-        Fr_func = interpolate.interp1d(r, fr[:, ii-1+nth//2], kind=interp_sch, fill_value='extrapolate')
-        Fr = Fr_func(rr)[0]
+        #Fr_func = interpolate.interp1d(r, fr[:, ii-1+nth//2], kind=interp_sch, fill_value='extrapolate')
+        #Fr = Fr_func(rr)[0]
 
-        adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
-
+        #adht,_,_,_,_,_,_ = dht(Fr, RR, bessel_zeros, KK, I)
+        adht = np.dot(fr[:, ii-1+nth//2], F)
         
         #inverse dht
         
         
         
-        Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
+        #Fr = idht(adht*np.exp(-1j*0.5*(kk**2)*dt), I, KK, RR)
         #Fr = idht(adht, I, KK, RR)
-        fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
-        fr[:, ii-1+nth//2] = fr_func(r)
+        #fr_func = interpolate.interp1d(rr[0], Fr[0], kind=interp_sch, fill_value='extrapolate')
+        #[ii,:jmodes]
+        fr[:, ii-1+nth//2] = np.dot(adht*np.exp(-1j*0.5*(KK**2)*dt)* np.pi**2 / 2, B)
     
-    r2 = x_of_k(kt)
+    r10 = x_of_k(kt)
     wf = obifft(kt, fr,-1)
 
-    if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
+    #if abs((pp-1)/ppskip - np.floor((pp-1)/ppskip)) <= 1e-14:
     
 
-        psi = io.loadmat(nameout)
-        psi.update({'dwfdt':dwfdt})
+    #    psi = io.loadmat(nameout)
+    #    psi.update({'dwfdt':dwfdt})
         #io.savemat(nameout, psi)
     
 
@@ -270,19 +274,31 @@ for t in np.arange((nti+1)*dt, T+dt, dt):
             wf[i, :] = 0
     '''
     
-    wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
-    wfi[:wf.shape[0], :wf.shape[1]] = wf
+    if count%10 < 0.5:
+        wfi = np.zeros((wf.shape[0], wf.shape[1]+1), complex)
+        wfi[:wf.shape[0], :wf.shape[1]] = wf
 
-    for i in range(wfi.shape[0]):
-        wfi[i][-1] = wf[i][0]
+        for i in range(wfi.shape[0]):
+            wfi[i][-1] = wf[i][0]
 
-    #Z = np.angle(wfi)
-    Z = np.abs(wfi)**2
-    plt.figure(figsize = (10, 8))
-    plt.pcolor(X, Y, Z, cmap=cm.jet)
-    plt.title('t=%f'%t)
-    plt.colorbar()
-    plt.pause(0.05)
-    plt.show()
+
+        Z = np.abs(wfi)**2
+        #Z = np.angle(wfi)
+        plt.figure(figsize = (10, 8))
+        plt.pcolor(X, Y, Z, cmap=cc.cm.fire)#, vmax = z_max, vmin = z_min)
+        title = 'new interpolate,t=%.3f'%t
+        #plt.title(title+',dt = %.4f'%dt)
+        plt.colorbar()
+        plt.show()
     
-    pp += 1
+    count += 1
+    #pp += 1
+    
+    energy.append(compute_energy(wf, dr, dth, Rad))
+    L.append(compute_L(wf, dr, dth, Rad))
+    
+
+save_dict_E = {'E':energy}
+io.savemat('./output/kernal/energy', save_dict_E)
+save_dict_L = {'L':L}
+io.savemat('./output/kernal/L', save_dict_L)

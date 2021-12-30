@@ -18,23 +18,30 @@ from interpolation import *
 from conservative import *
 import os
 
-new = io.loadmat('./output/kernal/energy_new')
-old = io.loadmat('./output/kernal/energy_old')
+new = io.loadmat('./output/kernal/energy')
+#old = io.loadmat('./output/kernal/energy_old')
 
-newL = io.loadmat('./output/kernal/L_new')
-oldL = io.loadmat('./output/kernal/L_old')
+newL = io.loadmat('./output/kernal/L')
+#oldL = io.loadmat('./output/kernal/L_old')
 
 enew = new['E']
-eold = old['E']
+#eold = old['E']
 
 lnew = newL['L']
-lold = oldL['L']
+#lold = oldL['L']
 
-start = 0
-end = 501
+#start = 0
+#end = 501
 
 it = range(len(enew[0]))
 
+plt.figure(figsize = (10,8))
+plt.title('Energy R/R0=1.25')
+plt.plot(enew[0], linewidth=1)
+#plt.ylim(9e-6, 10e-6)
+#plt.plot(np.real(lnew[0]))
+
+'''
 plt.figure(figsize = (8,8))
 plt.plot(it, enew[0], label = 'New method')
 plt.plot(it, eold[0], label = 'Old method')
@@ -55,3 +62,4 @@ plt.ylabel('L', fontsize = 20)
 plt.grid('on')
 plt.xlim(0,300)
 plt.legend()
+'''

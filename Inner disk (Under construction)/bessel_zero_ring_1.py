@@ -55,8 +55,9 @@ def bessel_zeros_ring(order, n_roots, a, b, accuracy):
         mid = (left + right) / 2
     
         iteration = 0
-        while abs(bessel(order, a, b, mid)/bessel(order, a, b, compare)) > accuracy and iteration <= 56:
-        
+        while abs(bessel(order, a, b, mid)) > accuracy and iteration <= 40:
+        #/bessel(order, a, b, compare)
+            
             if np.sign(bessel(order, a, b, mid)) == np.sign(bessel(order, a, b, left)):
                 left = np.copy(mid)
             else:
@@ -66,9 +67,9 @@ def bessel_zeros_ring(order, n_roots, a, b, accuracy):
             iteration += 1
             #print(compare)
         
-        print(bessel(order, a, b, mid))
+        
         roots.append(mid)
-    
+    print(order)
     return roots
 
 
@@ -76,13 +77,13 @@ order = 128
 n_roots = 256
 accuracy = 1e-14
 
-a = 8
-b = 10
+a = 1
+b = 1.5
 start = time.time()
 c = []
 for i in range(order+1):
     c.append(bessel_zeros_ring(i, n_roots, a, b, accuracy))
 print(time.time() - start)
-with open('dht_ring.csv', 'w') as csvfile:
+with open('dht_ring_1_5.csv', 'w') as csvfile:
     writer = csv.writer(csvfile)
     [writer.writerow(r) for r in c]

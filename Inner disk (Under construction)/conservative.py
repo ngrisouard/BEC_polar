@@ -20,7 +20,7 @@ def compute_energy(wf, dr, dtheta, Rad):
         
         dwfdtheta[i,:] = (np.roll(wf[i,:], -1) - wf[i,:])/dtheta
         
-    for i in range(np.shape(dwfdr)[0]):
+    for i in range(np.shape(dwfdr)[0]-1):
         
         dwfdr[:,i] = (np.roll(wf[:,i], -1) - wf[:,i])/dr
         
@@ -52,7 +52,7 @@ def compute_L(wf, dr, dtheta, Rad):
         
         dwfdtheta[i,:] = (np.roll(wf[i,:], -1) - wf[i,:])/dtheta
         
-    for i in range(np.shape(dwfdr)[0]):
+    for i in range(np.shape(dwfdr)[0]-1):
         
         dwfdr[:,i] = (np.roll(wf[:,i], -1) - wf[:,i])/dr
         
